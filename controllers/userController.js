@@ -4,6 +4,10 @@ const bcryptjs = require('bcryptjs')
 
 const sendMail = require('../config/mailService')
 
+const jwt = require('jsonwebtoken');
+
+const JWT_SECRET = process.env.JWT_SECRET;
+
 
 exports.getAllUsers = async (req, res, next) => {
     try {
@@ -35,6 +39,26 @@ exports.createUsers = async (req, res, next) => {
         console.log(error.message);        
     }
 }
+
+exports.loginUsers = async (req, res, next) => {
+    try {
+       const {email, password} = req.body;
+       const user = await User.findOne({email});
+
+       if (!user) {
+        return res.status(401).json({message: 'invalid email or password'});
+       }
+       const isMatch = await bcryptjs.compare(password, user.password)
+       if (!isMatch) {
+        return res.status(401).json({message: 'invalid email or password'});
+       }
+       const token = jwt.sign({id: user._id}, JWT_SECRET, {expiresIn: '1h'});
+       res.status(200).json({token, user})
+    } catch (error) {
+        console.log(error.message);        
+    }
+}
+
 exports.getUserByid = async (req, res, next) => {
     try {
        const user = await User.findById(req.params.id);
@@ -47,6 +71,7 @@ exports.getUserByid = async (req, res, next) => {
         console.log(error.message);        
     }
 }
+
 exports.updateUserByid = async (req, res, next) => {
     try {
         const {name, email, password} = req.body;
@@ -65,6 +90,7 @@ exports.updateUserByid = async (req, res, next) => {
         
     }
 }
+
 exports.deleteUserByid = async (req, res, next) => {
     try {
         const {name, email, password} = req.body;
